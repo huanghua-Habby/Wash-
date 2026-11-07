@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="application-version" content="0.5">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WASH · 胡闹洗车</title>
+  <link rel="icon" type="image/x-icon" href="./assets/brand/wash-icon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/brand/wash-icon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/brand/wash-icon-180.png" />
+  <style>html,body{background:#101c19}#boot-loading{position:fixed;inset:0;z-index:200;background:#101c19;color:#fff8e7;display:grid;place-content:center;text-align:center;font-family:sans-serif}#boot-loading[hidden]{display:none}</style>
+
+  <!-- 高清 Q 版圆润字体：中文 ZCOOL KuaiLe（站酷快乐体）+ 拉丁 Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link id="game-fonts" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" media="print" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/",
+      "lil-gui": "/vendor/lil-gui/lil-gui.esm.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="boot-loading" aria-label="正在加载游戏">
+    <strong class="boot-title">WASH!</strong><p id="boot-label" role="status">准备资源</p>
+    <div class="boot-progress" role="progressbar" aria-label="游戏加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="boot-fill"></i></div>
+    <span id="boot-percent">0%</span>
+  </div>
+  <div id="app-frame">
+  <canvas id="game" tabindex="-1" aria-label="车顶练习场，WASD 移动，空格跳跃，J 交互，K 投掷，L 技能"></canvas>
+  <div id="ui-stage">
+  <div id="hud">
+    <div class="home-sidebar">
+    <div class="sidebar-book">
+      <nav class="sidebar-tabs" role="tablist" aria-label="角色与出发清单">
+        <button id="sidebar-role" class="sidebar-tab" type="button" role="tab" aria-selected="true" aria-controls="room-panel">我的角色</button>
+        <button id="sidebar-checklist" class="sidebar-tab" type="button" role="tab" aria-selected="false" aria-controls="todo">出发清单</button>
+      </nav>
+    <div class="sidebar-pages">
+    <!-- 待办清单（手写便签） -->
+    <aside class="notepad sidebar-page" id="todo" role="tabpanel" aria-labelledby="sidebar-checklist" hidden>
+      <div class="tape"></div>
+      <h2>出发清单</h2>
+      <ul id="todo-list"></ul>
+      <div class="note-foot">Tab 切换书签</div>
+    </aside>
+
+    <section id="room-panel" class="room-panel panel sidebar-page" role="tabpanel" aria-labelledby="sidebar-role" aria-label="角色与房间">
+      <section class="room-profile" aria-labelledby="profile-title">
+        <div class="room-section-head"><h3 id="profile-title">我的角色</h3></div>
+        <div class="profile-name-view">
+        <div id="profile-summary" class="profile-summary name-view">
+          <div id="profile-portrait" class="profile-portrait" aria-hidden="true"><i id="profile-coat" class="coat-sample coat-ginger"></i></div>
+          <div class="profile-details"><div class="profile-name-row"><strong id="profile-name">洗车员</strong><button id="edit-player-name" type="button" aria-label="修改玩家 ID" aria-expanded="false" aria-controls="player-name-editor">✎</button></div><p id="profile-breed">猫猫 · 橘猫</p></div>
+        </div>
+        <form id="player-name-editor" class="name-view name-editor" hidden>
+          <label class="sr-only" for="player-name">玩家 ID</label>
+          <div class="name-edit-row"><input id="player-name" type="text" maxlength="12" autocomplete="off" spellcheck="false" aria-describedby="name-limit room-message" /><button id="save-player-name" type="submit">保存</button></div>
+          <small id="name-limit">12 英文 / 6 中文 · Esc 取消</small>
+        </form>
+        </div>
+        <button id="customize-player" class="customize-player" type="button" disabled><span class="customize-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3a9 9 0 0 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h2a4.5 4.5 0 0 0 4.5-4.5C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.4"/><circle cx="10" cy="7.3" r="1.4"/><circle cx="14.5" cy="7.3" r="1.4"/><circle cx="17" cy="11" r="1.4"/></svg></span><span class="customize-label">定制角色<small>换动物、毛色和颜色</small></span><b aria-hidden="true">›</b></button>
+      </section>
+      <section class="room-current" aria-labelledby="room-code-label">
+        <div class="room-section-head"><h3 id="room-code-label">我的房间</h3><span id="room-role">连接中</span></div>
+        <span class="room-code-caption">房间码</span>
+        <div class="room-code-row"><strong id="room-code-value">连接中</strong><button id="room-action" type="button" aria-label="复制房间码">复制</button></div>
+      </section>
+      <section class="room-join"><button id="toggle-join-room" class="join-toggle" type="button" aria-expanded="false" aria-controls="join-room-form">加入朋友的房间<b aria-hidden="true">⌄</b></button><form id="join-room-form" class="room-disclosure" hidden><label class="sr-only" for="join-code">朋友的房间码</label><div class="join-row"><input id="join-code" type="text" maxlength="6" placeholder="输入房间码" autocomplete="off" spellcheck="false" /><button id="join-room" type="submit">加入 ↗</button></div></form></section>
+      <div class="room-ticket-foot"><p id="room-message" role="status" aria-live="polite"></p></div>
+    </section>
+
+    <section id="room-settings" class="room-panel room-settings panel sidebar-page" role="tabpanel" aria-labelledby="sidebar-checklist" aria-label="房间设置" hidden>
+      <div class="room-section-head setting-section"><h3>结束条件</h3><span>至少保留一项</span></div>
+      <div class="setting-group" data-setting="scoreTarget"><label class="setting-toggle"><input type="checkbox" /><span>目标分数</span></label><div class="setting-choices" role="group" aria-label="目标分数"></div></div>
+      <div class="setting-group" data-setting="timeLimit"><label class="setting-toggle"><input type="checkbox" /><span>限时</span></label><div class="setting-choices" role="group" aria-label="限时"></div></div>
+      <p class="room-settings-note">先达到目标分的队伍获胜；时间到则比较总分。</p>
+      <div class="room-section-head setting-section"><h3>AI 补位</h3></div>
+      <div class="setting-group" data-choice="aiFill"><div class="setting-choices" role="group" aria-label="AI 补位"></div><p class="setting-choice-note" aria-live="polite"></p></div>
+      <div class="room-section-head setting-section"><h3>AI 难度</h3></div>
+      <div class="setting-group" data-choice="aiDifficulty"><div class="setting-choices" role="group" aria-label="AI 难度"></div><p class="setting-choice-note" aria-live="polite"></p></div>
+      <p class="room-settings-owner"></p>
+    </section>
+    </div>
+    </div>
+
+    <!-- Versus teams: its own card under the sidebar book, one block per team in the team color; the "join" button sits in the other team's block. -->
+    <section id="room-teams" class="room-teams" aria-label="对抗队伍" hidden><div class="team-block" data-team="0"><div class="team-head"><h3>红队</h3><span class="team-count"></span></div><ul class="team-seats"></ul><button class="team-join" type="button" data-team="0" hidden>加入红队</button></div><div class="team-block" data-team="1"><div class="team-head"><h3>蓝队</h3><span class="team-count"></span></div><ul class="team-seats"></ul><button class="team-join" type="button" data-team="1" hidden>加入蓝队</button></div></section>
+
+    <!-- 操作提示 -->
+    <section class="keys panel" aria-label="操作方法">
+      <div id="keys-more" class="keys-more room-disclosure" hidden>
+        <span><kbd>L</kbd> 使用技能</span>
+        <span><kbd>U</kbd> 按住选表情</span>
+        <span><kbd class="wide">Tab</kbd> 切换书签</span>
+        <!-- Party voice keys: only while a voice link exists (ControlsHint.setVoice). -->
+        <span id="keys-voice-mic" hidden><kbd>V</kbd> 麦克风</span>
+        <span id="keys-voice-listen" hidden><kbd>B</kbd> 收听语音</span>
+      </div>
+      <div class="keys-core">
+        <span><kbd class="wide" aria-label="W A S D">WASD</kbd> 移动</span>
+        <span><kbd class="wide">空格</kbd> 跳跃</span>
+        <span><kbd>J</kbd> 交互</span>
+        <span><kbd>K</kbd> 投掷</span>
+      </div>
+      <button id="toggle-keys" class="keys-toggle" type="button" aria-expanded="false" aria-controls="keys-more"><span id="toggle-keys-label">全部按键</span><b aria-hidden="true">⌃</b></button>
+    </section>
+
+    </div>
+
+    <main class="home-menu" id="home-menu" aria-label="主菜单">
+      <header class="wash-brand">
+        <div class="brand-kicker">全员上车 · 准备开工</div>
+        <div class="brand-art" aria-hidden="true">
+          <i class="water-drop drop-one"></i><i class="water-drop drop-two"></i><i class="water-drop drop-three"></i>
+          <img id="wash-watergun" class="brand-watergun" src="./assets/brand/wash-watergun.svg" alt="" width="112" height="92" decoding="async" fetchpriority="high" />
+          <div class="splash-stroke"></div>
+        </div>
+        <h1>WASH<span class="brand-dot">!</span></h1>
+        <div class="brand-subtitle"><span></span>胡闹洗车<span></span></div>
+      </header>
+      <div class="mode-entry">
+        <button class="mode-switch" id="mode-switch" type="button" hidden><span class="mode-switch-label">我不想合作啦！</span><small>切换到 4v4 对抗</small></button>
+      </div>
+      <nav class="menu-actions" aria-label="游戏菜单">
+        <button class="menu-button primary" id="new-game"><span class="button-index">01</span><span>新游戏<small>出发，把麻烦洗干净</small></span><span class="button-icon icon-new-game" aria-hidden="true"></span></button>
+        <button class="menu-button" id="continue-game" disabled><span class="button-index">02</span><span>继续游戏<small>还没有进行中的旅程</small></span><span class="button-icon icon-continue-game" aria-hidden="true"></span></button>
+        <button class="menu-button" id="select-level"><span class="button-index">03</span><span>选择关卡</span><span class="button-icon icon-select-level" aria-hidden="true"></span></button>
+        <button class="menu-button" id="settings"><span class="button-index">04</span><span>设置</span><span class="button-icon icon-settings" aria-hidden="true"></span></button>
+      </nav>
+      <p id="save-status" class="save-status" role="status" aria-live="polite"></p>
+    </main>
+  </div>
+
+  <div id="game-controls" class="play-hud" hidden>
+    <button id="pause-game" class="pause-button" aria-label="暂停"><span aria-hidden="true">Ⅱ</span></button>
+    <section id="score-panel" class="game-score panel" aria-label="分数与连击">
+      <div class="combo-row"><span id="combo-value">COMBO ×1</span><span id="combo-flame" class="combo-flame" hidden aria-label="满连击火焰"></span></div>
+      <div class="score-row"><span class="score-coin" aria-hidden="true">●</span><strong id="score-value">0</strong></div>
+    </section>
+    <section id="time-panel" class="game-time panel" aria-label="剩余时间">
+      <strong id="time-value">03:00</strong><div class="round-time-bar"><i id="time-fill"></i></div>
+    </section>
+  </div>
+  <div id="interaction-prompt" class="interaction-prompt" hidden></div>
+
+  <dialog id="customize-dialog" class="customize-dialog" aria-labelledby="customize-title">
+    <button class="dialog-close customize-close" aria-label="关闭定制角色">×</button>
+    <header class="customize-heading"><span class="dialog-kicker">让队友一眼认出你</span><h2 id="customize-title">定制角色</h2></header>
+    <div class="customize-layout">
+      <div class="customize-preview-column">
+        <section class="customize-preview" aria-label="角色预览"><canvas aria-label="定制角色的三维预览"></canvas><strong class="customize-preview-name"></strong></section>
+        <section class="customize-ability" aria-labelledby="customize-ability-title">
+          <header><span class="ability-mark" aria-hidden="true">✦</span><h3 id="customize-ability-title">特殊能力</h3><span class="ability-type"></span></header>
+          <p class="ability-description"></p>
+          <div class="ability-actions" hidden></div>
+        </section>
+      </div>
+      <div class="customize-options">
+        <section><h3>动物</h3><div class="animal-choices"></div></section>
+        <section><h3>品种</h3><div class="breed-choices"></div></section>
+        <section><h3>玩家颜色 <small class="color-note">队友使用中的颜色不可选</small></h3><div class="color-choices"></div></section>
+      </div>
+    </div>
+    <footer class="customize-footer"><p class="customize-error" role="status" aria-live="polite"></p><button class="customize-cancel" type="button">取消</button><button class="customize-confirm" type="button">确定</button></footer>
+  </dialog>
+  <dialog id="host-notice" class="menu-dialog host-notice" aria-labelledby="host-notice-title" aria-describedby="host-notice-detail">
+    <span class="dialog-kicker">房间通知</span><h2 id="host-notice-title"></h2>
+    <p id="host-notice-detail" class="host-notice-detail"></p>
+    <p id="host-notice-count" class="dialog-note" role="timer" hidden></p>
+    <div id="host-notice-votes" class="pause-votes" role="group" aria-label="继续投票" hidden></div>
+    <button id="host-notice-confirm" class="menu-button primary" type="button" hidden>确认</button>
+  </dialog>
+  <dialog id="menu-dialog" class="menu-dialog" aria-labelledby="dialog-title">
+    <button class="dialog-close" id="dialog-close" aria-label="关闭">×</button>
+    <span class="dialog-kicker" id="dialog-kicker"></span><h2 id="dialog-title"></h2>
+    <div id="dialog-content"></div>
+  </dialog>
+  </div>
+  </div>
+
+  <!-- The transition joins the browser top layer above all existing modal UI. -->
+  <dialog id="wash-iris-layer" class="wash-iris-layer" aria-label="正在切换场景" tabindex="-1">
+    <svg id="wash-iris" class="wash-iris" viewBox="0 0 1440 810" preserveAspectRatio="xMidYMid slice" hidden aria-hidden="true">
+      <defs><mask id="wash-iris-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="810"><rect width="1440" height="810" fill="white"/><text id="wash-cutout" x="720" y="405" dy=".34em" text-anchor="middle" fill="black" font-family="Fredoka, sans-serif" font-size="250" font-weight="700">WASH</text><circle id="wash-opening" cx="720" cy="405" r="0" fill="black"/></mask></defs>
+      <rect width="1440" height="810" fill="#101c19" mask="url(#wash-iris-mask)"/>
+    </svg>
+  </dialog>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

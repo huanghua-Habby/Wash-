@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 92" fill="none">
+  <!-- Rounded wash sprayer: muzzle, pressure body, trigger guard and grip. -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <path d="M14 29H27V23H88C97 23 102 29 102 37V43C102 51 96 57 87 57H82L92 78C94 83 92 86 87 87L74 89C70 90 67 88 65 84L52 57H27V51H14Z" fill="#628d88" stroke="#628d88" stroke-width="7"/>
+    <path d="M52 47H77L82 61C84 68 79 73 73 73H63" fill="#8dc6d1" stroke="#f9edc8" stroke-width="5"/>
+    <path d="M58 49L63 59C64 62 63 64 60 64" stroke="#fff9e9" stroke-width="4"/>
+    <path d="M27 17H88C96 17 100 23 100 31V37C100 45 95 50 87 50H78L89 73C91 77 90 80 86 81L75 84C71 85 68 83 67 80L52 50H27Z" fill="#e7c375" stroke="#f9edc8" stroke-width="5"/>
+    <path d="M16 23H29V44H16C12 44 10 42 10 38V29C10 25 12 23 16 23Z" fill="#8dc6d1" stroke="#eaf7eb" stroke-width="5"/>
+    <path d="M9 27V40" stroke="#326b73" stroke-width="4"/>
+    <path d="M39 27H83C87 27 89 29 89 32" stroke="#fff0ba" stroke-width="4"/>
+    <path d="M73 66L78 77" stroke="#c5a45e" stroke-width="3"/>
+    <path d="M51 15V10H71V15" fill="#8dc6d1" stroke="#eaf7eb" stroke-width="4"/>
+  </g>
+</svg>

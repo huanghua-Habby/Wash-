@@ -1,0 +1,14 @@
+# Public preview only. Keep one instance: room registration is process-local.
+services:
+  - type: web
+    name: wash-friends-preview
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      # Render exposes HTTP/WebSocket, but not the local UDP STUN listener.
+      - key: WASH_STUN_PORT
+        value: "0"

@@ -1,0 +1,40 @@
+/** Client copy/assets only. The host chooses guide/page and owns all confirmations. */
+import { GUIDE_DEFINITIONS } from '../../../shared/guideDefinitions.js';
+export const GUIDE_CONTENT = Object.freeze({
+  'basic-controls': [{ title: '操作说明', image: new URL('../../assets/guides/basic-controls.webp', import.meta.url).href,
+    alt: '操作说明：WASD 移动，空格跳跃，J 轻点拾取、长按使用，K 轻点放下、长按投掷，L 技能。猫咪为被动技能。' }],
+  'tools-water': [{ title: "毛巾",
+    image: new URL('../../assets/guides/tools-water.webp', import.meta.url).href,
+    alt: "毛巾。彩铅手绘教学图按左上、右上、左下、右下分为四格。\n第一格“长按 J 擦拭”：小猫用黄色毛巾擦拭车顶。旁边的毛巾由黄色变成灰色，空耐久条标注 0%，擦拭示意上画着叉，表示毛巾变脏、耐久耗尽后不能继续擦拭。\n第二格“长按 J 洗净”：小猫拿着脏毛巾在洗面台水龙头下清洗，旁边的黄色毛巾和闪光表示已恢复干净。\n第三格“长按 J 喷水”：小猫拿着连接供水点的水枪，水流命中车顶污渍；转向箭头和文字提示调整朝向，对准污渍。\n第四格“留意水管长度”：水管连接供水点与小猫手中的水枪，中部有绷紧提示线；文字提示水管绷紧时，别再往远处跑。\n",
+    locales: { en: { image: new URL('../../assets/guides/tools-water.en.webp', import.meta.url).href, alt: "Towel. Four colored-pencil panels show: hold J to wipe a car with a towel; a dirty towel at 0% durability can no longer wipe. Hold J at the sink to wash the towel clean. Hold J to spray with the water gun and turn to aim at the stain. Watch the hose length and stop moving away when the hose is taut.\n" } },
+  }],
+  'tools-soap': [{ title: "肥皂",
+    image: new URL('../../assets/guides/tools-soap.webp', import.meta.url).href,
+    alt: "肥皂。彩铅手绘教学图按左上、右上、左下、右下分为四格。\n第一格“轻点 J 拿取”：小猫从肥皂箱中拿出一块粉色、带爱心图案的肥皂。\n第二格“长按 J 打泡泡”：小猫用肥皂擦拭车顶油污，产生泡沫；文字说明肥皂是消耗品，用完再拿。\n第三格“油污清洁顺序”：粉色肥皂、蓝色水枪、黄色毛巾的图标从左到右排列，并以箭头连接，表示按肥皂、水枪、毛巾的顺序清洁油污。\n第四格“踩到肥皂，会滑飞！”：同一只小猫的连续动作展示踩中车顶上的肥皂后失去平衡，沿箭头方向打滑，滑出车顶边缘。\n",
+    locales: { en: { image: new URL('../../assets/guides/tools-soap.en.webp', import.meta.url).href, alt: "Soap. Four colored-pencil panels show: tap J to pick up soap from the box. Hold J to lather grease; soap runs out, so grab another bar when needed. Clean grease in this order: soap, water gun, then towel. Stepping on dropped soap makes the cat slide off the car.\n" } },
+  }],
+  'tools-charging': [{ title: "充电",
+    image: new URL('../../assets/guides/tools-charging.webp', import.meta.url).href,
+    alt: "充电。暖色纸张上的彩铅手绘教学图按左上、右上、左下、右下分为四格。\n第一格“轻点 J 拿取”：小猫从奶白色、薄荷色面板的充电桩上取下充电头，充电头通过深色电线连接充电桩。\n第二格“轻点 J 自动充电”：拿着充电头靠近车辆车顶充电口，轻点 J 插入后自动充电，不需要长按；绿色进度条表示正在充电。\n第三格“充电头带电”：充电头接触车顶积水，水面出现闪电警示，小猫站在旁边干燥的车顶上避开危险。文字提示：碰到积水会导电，小心触电！\n第四格“额外积分”：充满后，场上未结算车辆得分增加 50%，受益车辆的进度条变为紫色。充电属于可选加分，洗净车辆即可交单，不必等待充满。\n",
+    locales: { en: { image: new URL('../../assets/guides/tools-charging.en.webp', import.meta.url).href, alt: "Charging. Four colored-pencil panels show: tap J to pick up the charging plug. Tap J near the charging port to connect it; charging continues automatically. The live plug electrifies puddles, so avoid shocks. A full charge adds 50% points to all current unfinished orders, shown by purple progress bars. Charging is optional; cleaning the car is enough to complete its order.\n" } },
+  }],
+  'hazard-road-sign': [{ title: "公告牌",
+    image: new URL('../../assets/guides/hazard-road-sign.webp', import.meta.url).href,
+    alt: "公告牌。暖色纸张上的彩铅手绘教学图，左右两格按时间顺序说明危险预警与返回安全区域。\n左格“留意危险预警”：小猫站在侧边订单车的车顶，危险侧出现红色预警三角和箭头，前方蓝色公告牌正在接近。自己的浅蓝色洗车主车位于旁边的中央车道。文字提示：看到预警，注意危险侧！\n右格“赶快回到安全区”：小猫已经回到中央主车车顶，蓝色返回箭头从侧边订单车指向主车。公告牌从无人站立的侧边订单车上方扫过，中央主车上的小猫避开危险。文字提示：及时回到自己的车！图中不以原地跳跃作为躲避办法。\n",
+    locales: { en: { image: new URL('../../assets/guides/hazard-road-sign.en.webp', import.meta.url).href, alt: "Road Signs. Two colored-pencil panels show a warning on the dangerous side while a road sign approaches a side car. The cat moves back to its own blue van in the center lane before the sign sweeps over the side car. Watch for danger warnings and hurry back to safety.\n" } },
+  }],
+  'versus-terminal': [{ title: "终端",
+    image: new URL('../../assets/guides/versus-terminal.webp', import.meta.url).href,
+    alt: "终端。暖色纸张上的彩铅手绘教学图，左右两格说明骇入的收益与风险。\n左格“空手长按 J 骇入”：橘色小猫在车顶操作青色屏幕的终端，骇入进度条下方的箭头指向三种可能的车辆干扰：变脏、开溜、爆炸。文字提示“随机干扰对方车辆”和“让对方的车发生各种离谱的事！”。\n右格“骇入时极其脆弱！”：灰色对手将正在操作终端的小猫拍走，屏幕上的叉表示操作中断。文字提示“找准时机，小心被拍走！”。\n",
+    locales: { en: { image: new URL('../../assets/guides/versus-terminal.en.webp', import.meta.url).href, alt: "Terminal. Two colored-pencil panels on warm paper explain the rewards and risks of hacking.\nLeft, ‘Hold J with empty hands to hack’: an orange kitten operates a terminal with cyan screens on a vehicle roof. An arrow below the hacking progress bar points to three possible disruptions: a car getting dirty, driving away, or exploding. Captions read ‘Randomly disrupt the enemy's car’ and ‘Unleash chaos on the enemy's car!’.\nRight, ‘You're vulnerable while hacking!’: a gray rival slaps the hacking kitten away from the terminal; a cross on the screen indicates interruption. The caption reads ‘Time it right—watch out for slaps!’.\n" } },
+  }],
+});
+
+export function validateGuideResources() {
+  for (const [id, definition] of Object.entries(GUIDE_DEFINITIONS)) {
+    const pages = GUIDE_CONTENT[id];
+    if (!pages || pages.length !== definition.pages.length) throw new Error(`Guide resource page count mismatch: ${id}`);
+    if (pages.some(page => page.image ? !page.alt : !page.text || !page.draft)) throw new Error(`Guide resource missing image/alternative text: ${id}`);
+    if (pages.some(page => Object.values(page.locales || {}).some(asset => !asset.image || !asset.alt))) throw new Error(`Localized guide resource missing image/alternative text: ${id}`);
+  }
+}

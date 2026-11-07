@@ -1,0 +1,153 @@
+const { installGuideReader } = require('./helpers/guide-browser.cjs');
+/** Real native dialog close ordering, field focus, managed HUD and role-aware pause/return. */
+const assert = require('node:assert/strict');
+const { chromium } = require('playwright');
+require('./helpers/browser-locale.cjs');
+const url = new URL(process.env.WASH_TEST_URL || 'http://127.0.0.1:8080/'); url.searchParams.set('wash-test', '1');
+(async () => {
+  const browser = await chromium.launch({ headless: true, channel: 'chrome' }); const errors = [];
+  await installGuideReader(browser);
+
+  try {
+    const pages = [];
+    for (let i = 0; i < 2; i++) {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 810 } });
+      const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message)); pages.push(page);
+    }
+    const [host, guest] = pages;
+    await Promise.all(pages.map(async page => { await page.goto(url.href); await page.waitForSelector('body.scene-ready', { timeout: 60000 }); }));
+    assert.equal(await host.locator('#player-name-editor').isHidden(), true);
+    assert.equal(await host.locator('#join-room-form').isHidden(), true);
+    assert.ok((await host.locator('.room-profile').boundingBox()).y < (await host.locator('.room-current').boundingBox()).y);
+    const rolePosition = await host.locator('#room-panel').boundingBox();
+    assert.equal(await host.locator('#sidebar-role').getAttribute('aria-selected'), 'true');
+    await host.keyboard.press('Tab');
+    await host.waitForSelector('#room-panel', { state: 'hidden' });
+    assert.equal(await host.locator('#todo').getAttribute('aria-hidden'), 'false');
+    await host.locator('#hud').evaluate(async node => { await Promise.allSettled(node.getAnimations({ subtree: true }).map(animation => animation.finished)); });
+    const checklistPosition = await host.locator('#todo').boundingBox();
+    assert.ok(Math.abs(rolePosition.y - checklistPosition.y) < 12, 'bookmarks share the same upper-left space');
+    assert.ok(Math.abs(rolePosition.width - checklistPosition.width) < 2, 'bookmarks use the same width');
+    await host.screenshot({ path: 'docs/QA/room-checklist-bookmark.png' });
+    await host.keyboard.press('Tab');
+    await host.waitForSelector('#todo', { state: 'hidden' });
+    await host.locator('#room-panel').evaluate(async node => { await Promise.allSettled(node.getAnimations().map(animation => animation.finished)); });
+    await host.screenshot({ path: 'docs/QA/room-role-bookmark.png' });
+    const margins = await host.evaluate(() => {
+      const role = document.getElementById('room-panel').getBoundingClientRect(), keys = document.querySelector('.keys').getBoundingClientRect();
+      return { left:role.left, keysLeft:keys.left, roleTop:role.top, keysBottom:keys.bottom };
+    });
+    assert.ok(margins.left > 45 && Math.abs(margins.left - margins.keysLeft) < 10, 'left panels share increased inset');
+    assert.ok(margins.roleTop > 75 && margins.keysBottom < 745, 'left panels sit inward from top and bottom');
+    await host.locator('#sidebar-checklist').click(); await host.locator('#sidebar-role').click();
+    await host.waitForSelector('#todo', { state:'hidden' });
+    assert.equal(await host.locator('#room-panel').isVisible(), true, 'rapid bookmark switching preserves the current page');
+    await host.evaluate(() => {
+      window.__nameLayout = [];
+      window.__nameLayoutDone = new Promise(resolve => {
+        const sample = () => {
+          window.__nameLayout.push([document.getElementById('customize-player').getBoundingClientRect().top, document.getElementById('room-panel').getBoundingClientRect().bottom]);
+          if (window.__nameLayout.length < 40) requestAnimationFrame(sample); else resolve();
+        };
+        sample();
+      });
+    });
+    await host.locator('#edit-player-name').click();
+    await host.locator('#player-name').fill('洗车小队'); await host.locator('#player-name').press('Enter');
+    await host.waitForFunction(() => document.getElementById('profile-name').textContent === '洗车小队');
+    const nameLayout = await host.evaluate(async () => { await window.__nameLayoutDone; return window.__nameLayout; });
+    for (const index of [0, 1]) assert.ok(Math.max(...nameLayout.map(sample => sample[index])) - Math.min(...nameLayout.map(sample => sample[index])) < 0.5, 'nickname Enter transition never moves the card or following controls');
+    await host.locator('#edit-player-name').click(); await host.locator('#player-name').fill('取消草稿'); await host.keyboard.press('Escape');
+    assert.equal(await host.locator('#profile-name').textContent(), '洗车小队');
+    await host.evaluate(() => { __wash.ui.room.expandJoin(true); __wash.ui.room.expandJoin(false); __wash.ui.room.expandJoin(true); });
+    await host.waitForTimeout(220);
+    assert.equal(await host.locator('#join-room-form').isVisible(), true, 'old close completion cannot hide a reopened form');
+    await host.locator('#join-code').fill('ABCDEF');
+    const expandedLayout = await host.evaluate(() => ({ room: document.getElementById('room-panel').getBoundingClientRect().bottom, keys: document.querySelector('.keys').getBoundingClientRect().top }));
+    assert.ok(expandedLayout.room < expandedLayout.keys, 'expanded join form stays above key instructions');
+    await host.screenshot({ path: 'docs/QA/room-join-expanded.png' });
+    assert.equal(await host.evaluate(() => __wash.ui.input.enabled), false);
+    assert.equal(await host.locator('#hud').evaluate(node => node.inert), false, 'typing must not make the input itself inert');
+    assert.equal(await host.evaluate(() => document.activeElement.id), 'join-code');
+    await host.locator('#game').focus(); await host.waitForFunction(() => __wash.ui.input.enabled);
+    await host.evaluate(() => { __wash.ui.open('settings'); __wash.ui.open('customize'); });
+    await host.waitForSelector('#customize-dialog[open]');
+    await host.waitForTimeout(100);
+    assert.equal(await host.evaluate(() => __wash.ui.input.enabled), false, 'queued settings close cannot unlock Customize');
+    assert.equal(await host.locator('#menu-dialog').evaluate(node => node.open), false);
+    await host.locator('.customize-cancel').click(); await host.waitForSelector('#customize-dialog', { state: 'hidden' });
+    await host.waitForFunction(() => __wash.ui.input.enabled);
+    if (await guest.locator('#join-room-form').isHidden()) await guest.locator('#toggle-join-room').click(); await guest.locator('#join-code').fill(await host.locator('#room-code-value').textContent()); await guest.locator('#join-room').click();
+    await guest.waitForFunction(() => __wash.connection.guest?.open);
+    await guest.locator('#customize-player').click(); await guest.waitForSelector('#customize-dialog[open]');
+    await host.locator('#new-game').click();
+    await Promise.all(pages.map(page => page.waitForSelector('body.in-game')));
+    assert.equal(await guest.locator('#customize-dialog').evaluate(node => node.open), false, 'remote start closes home-only panels');
+    for (const page of pages) {
+      assert.equal(await page.locator('.world-hud').count(), 1);
+      assert.equal(await page.locator('.respawn-counters').count(), 1);
+      assert.equal(await page.evaluate(() => __wash.game.hud === __wash.ui.simulationHud), true);
+    }
+    await guest.locator('#pause-game').click(); await guest.waitForSelector('#menu-dialog[open]');
+    assert.equal(await host.evaluate(() => __wash.connection.authority.sim.game.paused), false, 'guest menu does not pause the room');
+    await guest.locator('.pause-settings').click(); await guest.locator('.settings-back').click();
+    assert.equal(await guest.evaluate(() => __wash.ui.input.enabled), false);
+    await guest.locator('.pause-continue').click(); await guest.waitForFunction(() => __wash.ui.input.enabled);
+    await host.locator('#pause-game').click(); await host.waitForSelector('#menu-dialog[open]');
+    await Promise.all(pages.map(page => page.waitForFunction(() => __wash.game.paused)));
+    await host.locator('.pause-settings').click();
+    await host.screenshot({ path: 'docs/QA/ui-managed-pause-settings.png' });
+    await host.locator('.settings-back').click(); await host.locator('.pause-continue').click();
+    await Promise.all(pages.map(page => page.waitForFunction(() => !__wash.game.paused)));
+    await host.evaluate(() => { __wash.connection.authority.sim.game.remaining = 0.001; });
+    await Promise.all(pages.map(page => page.waitForFunction(() => __wash.game.roundStage === 'results' && __wash.ui.finished && document.getElementById('menu-dialog').open)));
+    await host.keyboard.press('Escape'); await host.waitForSelector('#menu-dialog', { state: 'hidden' });
+    assert.equal(await host.evaluate(() => __wash.ui.input.enabled), false, 'closing results cannot resume a finished round');
+    await host.locator('#pause-game').click(); await host.locator('.pause-home').click();
+    await Promise.all(pages.map(page => page.waitForFunction(() => __wash.ui.page === 'home' && !__wash.ui.iris.active && __wash.ui.input.enabled)));
+    assert.equal(await host.locator('.world-hud').count(), 1, 'return reuses the managed HUD');
+    await host.locator('#sidebar-checklist').click();
+    await host.evaluate(() => {
+      const hud = __wash.ui.hud;
+      hud.setTasks([...hud.taskIds].map(id => ({ id, text: id })));
+      const ids = [...hud.taskIds]; ids.slice(0, -1).forEach(id => hud.complete(id));
+    });
+    assert.equal(await host.evaluate(() => __wash.ui.todoFolded), false, 'partial completion keeps the checklist available');
+    await host.evaluate(() => __wash.ui.hud.complete([...__wash.ui.hud.taskIds].at(-1)));
+    assert.equal(await host.evaluate(() => __wash.ui.todoFolded), true, 'all tasks complete folds the checklist automatically');
+    await host.keyboard.press('Tab');
+    await host.waitForFunction(() => !__wash.ui.todoFolded);
+    assert.equal(await host.evaluate(() => __wash.ui.todoFolded), false, 'completed checklist remains manually viewable');
+    await host.evaluate(() => { __wash.ui.hud.complete([...__wash.ui.hud.taskIds].at(-1)); __wash.ui.setPage('home'); });
+    assert.equal(await host.evaluate(() => __wash.ui.todoFolded), false, 'repeated completion never overrides manual visibility');
+    await host.locator('#settings').click();
+    assert.equal(await host.locator('#setting-motion').isChecked(), true, 'checked means all UI motion is enabled');
+    assert.equal(await host.locator('#dialog-content .dialog-note').count(), 0, 'settings has no repeated key instructions');
+    await host.locator('#setting-motion').uncheck(); await host.locator('#dialog-close').click();
+    await host.locator('#new-game').hover();
+    assert.equal(await host.locator('#new-game').evaluate(node => getComputedStyle(node).transform), 'none', 'off disables hover displacement too');
+    await host.evaluate(() => { __wash.ui.room.expandJoin(true); __wash.ui.worldHud.pop(document.getElementById('score-value')); });
+    assert.equal(await host.locator('#join-room-form').evaluate(node => getComputedStyle(node).animationName), 'none');
+    assert.equal(await host.evaluate(() => document.getAnimations().length), 0, 'off blocks CSS and Web Animations HUD effects');
+    await host.reload(); await host.waitForSelector('body.scene-ready', { timeout: 60000 });
+    assert.equal(await host.evaluate(() => __wash.ui.motionEnabled), false, 'global toggle survives reload');
+    assert.equal(await host.evaluate(() => __wash.ui.todoFolded), true, 'completed checklist starts folded after reload');
+    assert.equal(await host.locator('#todo-list li.done').count(), await host.locator('#todo-list li').count());
+    await host.keyboard.press('Tab');
+    await host.waitForFunction(() => !__wash.ui.todoFolded);
+    assert.equal(await host.evaluate(() => __wash.ui.todoFolded), false);
+    assert.equal(await host.locator('#room-panel').isHidden(), true, 'quiet UI switches bookmarks immediately');
+    await host.locator('#sidebar-role').click();
+    await host.locator('#customize-player').click(); await host.locator('.customize-cancel').click();
+    assert.equal(await host.locator('#customize-dialog').isHidden(), true, 'off closes without an animation wait');
+    await host.locator('#settings').click(); await host.locator('#setting-motion').check(); await host.locator('#dialog-close').click();
+    await host.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal(await host.evaluate(() => __wash.ui.motionEnabled && !__wash.ui.motionAllowed), true, 'OS reduced motion still overrides an enabled toggle');
+    await host.evaluate(() => __wash.ui.worldHud.pop(document.getElementById('score-value')));
+    assert.equal(await host.locator('#score-value').evaluate(node => node.getAnimations().length), 0);
+    await host.evaluate(() => __wash.ui.dispose());
+    assert.equal(await host.locator('.world-hud').count(), 0); assert.equal(await host.evaluate(() => __wash.ui.input.enabled), false);
+    assert.deepEqual(errors, []);
+    console.log('PASS Tab folding/card placement, one-time completion/persistence, fixed nickname crossfade, global motion toggle, managed focus/modals, host/guest pause, masked return and disposal');
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });
