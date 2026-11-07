@@ -12,3 +12,6 @@ services:
       # Render exposes HTTP/WebSocket, but not the local UDP STUN listener.
       - key: WASH_STUN_PORT
         value: "0"
+      # Public address discovery only. Direct connections can still fail without TURN.
+      - key: WASH_ICE_SERVERS
+        value: '[{"urls":"stun:stun.cloudflare.com:3478"}]'
